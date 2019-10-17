@@ -1,0 +1,6 @@
+"0","improved %>% ggplot() + "
+"0","  aes(x = cook, y = tender, fill = cook) +"
+"0","  geom_boxplot() + "
+"0","  theme_classic() + "
+"0","  facet_wrap(~trial_notes, ncol = 2) + "
+"0","  labs(y = ""Tenderness"")"

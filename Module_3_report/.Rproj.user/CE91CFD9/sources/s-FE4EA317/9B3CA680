@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1571269653655.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "9B3CA680",
+    "lastKnownWriteTime" : 1569299602,
+    "last_content_update" : 1569299602,
+    "path" : "C:/Users/My Account/Desktop/DATA2002/report_2/module_2_report.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "47,11",
+        "scrollLine" : "27"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

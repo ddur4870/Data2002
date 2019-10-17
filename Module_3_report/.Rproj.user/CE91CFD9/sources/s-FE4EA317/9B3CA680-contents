@@ -1,0 +1,381 @@
+---
+title: "Module 2 Report"
+author: '480386401'
+date: "23/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo = TRUE, warning=FALSE, message=FALSE}
+library(tidyverse)
+survey = readr::read_csv("C:/Users/My Account/Desktop/work/data2002/class_survey.csv")
+#dim(survey)
+```
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+library(janitor)
+old_names = colnames(survey)
+survey = survey %>% 
+  janitor::clean_names() %>% 
+  rename(postcode = postcode_of_where_you_live_during_semester,
+         units = what_statistics_courses_have_you_taken,
+         clubs = how_many_university_clubs_are_you_a_member_of,
+         dentist = how_long_has_it_been_since_you_last_went_to_the_dentist,
+         study = on_average_how_many_hours_per_week_did_you_spend_on_university_work_last_semester,
+         social_media = what_is_your_favourite_social_media_platform,
+         siblings = how_many_siblings_do_you_have,
+         exercise = how_many_hours_a_week_do_you_spend_exercising,
+         pet_growing_up = did_you_have_a_pet_growing_up ,
+         live_with_parents = do_you_currently_live_with_your_parents,
+         eye_colour = what_is_your_eye_colour,
+         hrs_employed = how_many_hours_per_week_do_you_work_in_paid_employment,
+         fav_season = what_is_your_favourite_season_of_the_year,
+         shoe_size = what_is_your_shoe_size,
+         height = how_tall_are_you,
+         floss_frequency = how_often_do_you_floss_your_teeth,
+         glasses = do_you_wear_glasses_or_contacts,
+         handedness = what_is_your_dominant_hand,
+         doneness = how_do_you_like_your_steak_cooked)
+new_names = colnames(survey)
+```
+
+```{r}
+survey = survey %>% 
+filter(study < 72, study > 0)
+dim(survey)
+```
+# Is there evidence that students who live with their parents study more hours per week than students who don’t live with their parents?
+
+For this question we are making a conclusion using the obtained data set's cleaned variables, lives_with_parents (binary categorical variable), and study (discrete numeric variable).
+Before conducting any tests on this variable we will first take a look at the distribution of the data. (whether it's normal or not).
+
+We can check for normality using a box plot (looking for symmetry) or a normal quantile-quantile plot (looking for the points being close to the straight line).The first figure shows a box plot depicting the hours of study as a whole, regardless of whether they live with their parents. This data is based off the cleaned version in which a filter was run through the hours of study per week and took out any below  r equal to 0 (impossible), and any over 72 hours a week (unreasonable).
+
+```{r}
+##all valid now with proper numbers for whether live at home and ##resonable levels of study, as the students must have done more ##than 0 hours of study, and they can't have done any more than 72 ##unless they spent almost all thier time studying.
+par(mfrow = c(1, 2))
+boxplot(survey$study)
+qqnorm(survey$study)
+qqline(survey$study)
+```
+
+When comparing the two graphs, the box plot seems as though it is reasonably symmetrical, however the pattern displayed on the qq plot seems to go away from the line, at both the top and bottom of the plot, it is close in all other parts of the graph. We will now observe the distribution when sorting the hours of study by whether the student lives at home or not.
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+with_parent=subset(survey, survey$live_with_parents == "Yes")
+without_parent=subset(survey, survey$live_with_parents == "No")
+```
+
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+ggplot(with_parent, aes(x = "", y = study)) + 
+  geom_boxplot() + 
+  geom_jitter(width = 0.1, 
+              size = 2,
+              colour = "blue") + 
+  labs(x = "", 
+       y = "Hours of study when living with parents") + 
+  coord_flip()
+```
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+ggplot(without_parent, aes(x = "", y = study)) + 
+  geom_boxplot() + 
+  geom_jitter(width = 0.1, 
+              size = 2,
+              colour = "red") + 
+  labs(x = "", 
+       y = "Hours of study when NOT living with parents") + 
+  coord_flip()
+```
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+par(mfrow = c(1, 2))
+qqnorm(main="WITH PARENTS",with_parent$study)
+qqline(with_parent$study)
+```
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+par(mfrow = c(1, 2))
+qqnorm(main="WITHOUT PARENTS",without_parent$study)
+qqline(without_parent$study)
+```
+
+Looking at the two main groups, we can see that they have symmetry with their box plots and fall relatively close to the qqline on the plot,although they all tend to move away from the expected values both at the start and at the end, meaning that we could assume that they are distributed normally, however to be safe we will assume that they aren't and opt to use the wilcoxon rank sum test.
+
+Now before diving into analysis we will first look at the initial mean median and standard between the two groups to make a prediction as to what the data seems to show so far.
+
+```{r}
+mean(without_parent$study)
+mean(with_parent$study)
+median(without_parent$study)
+median(with_parent$study)
+sd(with_parent$study)
+sd(without_parent$study)
+```
+
+When looking at these means, medians and deviations, we can see that when split by the groups, the mean and median for those without parents is slightly higher than those living with parents, although those without parents seem to have more deviation.
+
+This already seems to indicate that it will not be the case that those living at home with parents study MORE than those who don't. We will prove this formally with a hypothesis test.
+
+## Hypothesis
+
+H0 = subgroup A (living with parents) will have an equal amount of study to subgroup B (not living with parents)
+
+H1 = subgroup A (living with parents) do MORE study than subgroup B (not living with parents)
+
+## Assumptions
+
+The groups are independent and follow the same kind of distribution but differ by a shift. (as shown by the above graphs)
+
+## Test statistic and Observed Test statistic
+
+
+```{r}
+##with aprents
+##without parents
+lives_parents = c(with_parent$study)
+doesnt_live_parents = c(without_parent$study)
+dat = data.frame(
+  study = c(lives_parents,doesnt_live_parents),
+  lives = c(rep("with_parent", length(lives_parents)),
+             rep("without_parent", length(doesnt_live_parents)))
+)
+```
+In the table below, w represents the sum of all the ranks of that particular grouping (either with the parents or without), x bar represents the mean amount of study for each group. S represents the standard deviation of the amount of study in each group.N represents the counts of each particular group in the data frame.
+```{r}
+library(dplyr)
+dat = dat %>% mutate(r = rank(study))
+
+
+dat %>%
+  dplyr::group_by(lives) %>% 
+  dplyr::summarise(
+  w = sum(r),
+  xbar = mean(study),
+  s = sd(study),
+  n = n()
+) %>% 
+  knitr::kable(format = "markdown", 
+               digits = 3)
+```
+
+```{r}
+#library(ggplot2)
+ggplot(dat, aes(x = lives, y = study)) + 
+  geom_boxplot() + 
+  theme_minimal(base_size = 10) +
+  labs(y = "amount of study per week (hours)",
+       x = "Living situation")
+```
+
+When looking at the comparative box plots between the two samples, with the graph in mind, both of the distributions seem similar, however the living without the parents seems to have a higher median amount of study, with the deviation being more than those who live with their parents. Now we will apply the Wilcoxon rank-sum test, as we have 2 samples, in this we will sum the ranks over one of the samples (in our case, with the parents).
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+sum_dat = dat %>%
+  group_by(lives) %>% 
+  summarise(n = n(),
+            w = sum(r)
+  )
+```
+
+In the output below, three numbers are outputted, the number of observations of students living with their parents, the number of observations of students living without their parents and the total number of observations.
+
+```{r echo = TRUE, warning=FALSE, message=FALSE}
+n_A = sum_dat$n[sum_dat$lives == "with_parent"]
+n_B = sum_dat$n[sum_dat$lives == "without_parent"]
+# using the sums of the A sample
+N = n_A + n_B # total number of observations
+c(n_A, n_B, N)
+```
+
+The next numbers outputted show the observed w value and the expected w value, w is the sum of the ranks for that particular category.
+
+```{r echo = TRUE, warning=FALSE, message=FALSE}
+w = sum_dat$w[sum_dat$lives == "with_parent"]
+EW = n_A * (N + 1)/2
+c(w, EW)
+```
+
+As we are trying to determine whether students who live with their parents study MORE hours, the above seems to indicate that the null hypothesis, being that they don't study more is seeming likely as they are very close to the expected value for the null hypothesis. We will now determine the t0 and p value to make sure this is the case.
+
+The below outputs the t0 value.
+
+```{r echo = TRUE, warning=FALSE, message=FALSE}
+sumsqrank = sum(dat$r^2)
+g = N * (N + 1)^2/4
+varW = n_A * n_B * (sumsqrank - g)/(N * (N - 1))
+t0 = (w - EW)/sqrt(varW)
+t0
+```
+
+As we are trying to determine whether those living with parents study MORE than those that don't we will take the value of the area under the curve representing the probability of finding a result just as extreme or more extreme than this one.
+
+## P-value
+```{r}
+1 - pnorm(t0)
+```
+## Decision
+
+The result shows that if the null hypothesis was true, then we would have a relatively large chance of seeing observations like ours, thus we can't refute the null hypothesis, being that students who live with parents DONT study more than others. 
+We will test this again using the r inbuilt Wilcox test function below. 
+
+```{r}
+wilcox.test(lives_parents, doesnt_live_parents, alternative = 'greater', correct = FALSE)
+```
+This remains true when using the wilcoxon rank sum test, Does this remain the case providing we use a t-test (assuming a normal distribution, which we weren't sure about earlier)?
+```{r}
+t.test(lives_parents, doesnt_live_parents, alternative = 'greater')
+```
+As we can see even using the t-test we can see that the result remains the same, thus we can conclude that the null hypothesis holds, and we can say that students who live with their parents DONT study anymore than those who don't live with their parents.
+
+
+# Do families of Students that grew up with a pet have an effect on the number of siblings in that family?
+
+In the data set students are asked whether they had a pet growing up (a binary categorical variable), and in addition to that, were also asked how many siblings they have (discrete numeric). There's a possibility that a family having a pet could affect the number of siblings for reasons like, families with a pet feel as though they can't look after as many siblings or having a pet could affect children numbers as they feel more siblings should be there to look after the pet. 
+
+In this question, after cleaning the data, we will use hypothesis testing to determine whether the provided data source gives any evidence to support this. The first step is filtering out all bad data inputs for number of siblings.
+```{r}
+pets_data = survey %>% 
+filter(siblings < 20, siblings > -1)
+dim(pets_data)
+```
+
+We'll look at the distribution of the data when split into those that have pets and those that don't have pets.
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+had_pet=subset(pets_data, pets_data$pet_growing_up == "Yes")
+no_pet=subset(pets_data, pets_data$pet_growing_up == "No")
+```
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+par(mfrow = c(1, 2))
+qqnorm(main="Siblings number WITH pet",had_pet$siblings)
+qqline(had_pet$siblings)
+```
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+par(mfrow = c(1, 2))
+qqnorm(main="Siblings number WITHOUT pet",no_pet$siblings)
+qqline(no_pet$siblings)
+```
+
+Looking at the distributions they don't seem like they're overly normal, especially the number of siblings for those without a pet. This can be seen when taking note of the amount of dots moving away from the line especially at the lower end.
+
+The following code adds the ranks plus the desired variables into a data frame, that will be used for hypothesis testing.The outputted table shows the head of the new data frame, containing a column for the number of siblings, the pet status and the rank of that row.
+
+```{r echo = TRUE, warning=FALSE, message=FALSE}
+pet = c(had_pet$siblings)
+didnt_have_pet = c(no_pet$siblings)
+dat1 = data.frame(
+  siblings = c(pet,didnt_have_pet),
+  pet_status = c(rep("pet", length(pet)),
+             rep("no_pet", length(didnt_have_pet)))
+)
+
+dat1 = dat1 %>% dplyr::mutate(
+  r1 = rank(siblings)
+)
+
+dat1 %>%
+  dplyr::group_by(pet_status) %>% 
+  dplyr::summarise(
+  w1 = sum(r1),
+  xbar1 = mean(siblings),
+  s1 = sd(siblings),
+  n1 = n()
+) %>% 
+  knitr::kable(format = "markdown", 
+               digits = 3)
+
+head(dat1)
+```
+Now we can use the created data frame to visualize the data before analysis to make a prediction as to whether there will be a trend discovered after analysis. 
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+ggplot(data=dat1, aes(x=siblings, fill=pet_status)) +
+    geom_histogram(binwidth=.5, position="dodge")+ggtitle("Number of Siblings and Pet status")
+```
+
+From the above histogram we can see that the above trend seems to have a positive skew on for both the pet having number of siblings and the siblings without pets, it seems that when the family has siblings it is more likely to have a dog, the histogram could potentially be normally distributed, however to be safe we will not make that assumption. 
+
+Therefore we will use a Wilcoxon rank-sum test, to Relax the normality assumption and also relax the assumption of symmetry.
+
+## Hypothesis
+
+H0 = subgroup A (students with a pet growing up) will have an equal amount of siblings to subgroup B (not having a pet growing up)
+
+H1 = There is an unequal amount of siblings between the two subgroups
+
+## Assumptions
+
+The groups are independent and follow the same kind of distribution but differ by a shift. (as shown by the above graph)
+
+## Test Statistic
+
+The following table outputs the number of observations (n), for both of the two groups, and the sum of the ranks for that particular subgroup.
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+sum_dat1 = dat1 %>%
+  group_by(pet_status) %>% 
+  summarise(n1 = n(),
+            w1 = sum(r1)
+  )
+sum_dat1
+```
+
+The following numbers outputted indicate the sum of the ranks for those who had a pet and the expected sum of the ranks for those that had a pet, assuming the null hypothesis is true.
+
+```{r echo = TRUE, warning=FALSE, message=FALSE}
+n_A1 = sum_dat1$n1[sum_dat1$pet_status == "pet"]
+n_B1 = sum_dat1$n1[sum_dat1$pet_status == "no_pet"]
+w_A1 = sum_dat1$w1[sum_dat1$pet_status == "pet"]
+ew_A1 = n_A1 * (n_A1 + n_B1 + 1)/2 
+minw_A1 = n_A1 * (n_A1 + 1)/2
+#minw_A1
+w_A1
+ew_A1
+```
+
+As we can see from above, the sum that we received is actually fairly higher than the expected, which assumes that the null hypothesis is true, therefore there is a chance we could refute the null hypothesis. We will now obtain the test statistic of this observation. Because our observed is bigger than the expected, we will use the upper end of the tail of the distribution.
+
+## P-value
+```{r echo = TRUE, warning=FALSE, message=FALSE}
+2 * pwilcox(w_A1 - minw_A1 - 1, n_A1, n_B1, 
+            lower.tail = FALSE)
+```
+As we can see the p value obtained suggests that the data is consistent with H0 as we have a roughly 41% chance of observing this if the null hypothesis is true.
+
+In order to confirm this we will use the inbuilt wilcoxon test to determine whether this is accurate.
+
+```{r echo = TRUE, warning=FALSE, message=FALSE}
+wilcox.test(pet, didnt_have_pet)
+```
+
+As we can see this provides the same evidence as our test earlier, thus we are able to make the conclusion.
+
+## Decision
+
+From the observed p-value, we can say that families with pets are not likely to have a difference in the number of siblings, than families that don't have pets. i.e. having a pet in the family doesn't effect the number of siblings.
+
+## Further Question: Is there evidence that simply having siblings is independent to pet ownership?
+
+To follow up on the previous question, we will now test not whether theres a numerical relationship between the number of siblings and those that have a pet, rather we will group this infomation into having a sibling or not having a sibling, now we will check whether the two are independent (i.e no relationship between the 2).
+The following shows the head of the dataframe, when adding an additional column to our previously used data frame, with the binary column "has_sibling" in which the value can be either yes or no. 
+```{r echo =FALSE, message=FALSE, warning=FALSE}
+has_siblings = dat1
+codes <- list("1" = "yes", "2" = "yes","3" = "yes","4"="yes","0"="no")
+
+has_siblings = has_siblings %>% 
+    mutate(has_sibling = recode(siblings, !!!codes))
+head(has_siblings)
+```
+
+Below the chi-squared tests to see whether there there's a relationship between the two variables or not.
+```{r echo=FALSE, warnings=FALSE, message=FALSE}
+tab = table(has_siblings$has_sibling, has_siblings$pet_status)
+chisq.test(tab, correct = FALSE)
+```
+
+The test seems to indicate that there's no difference in having a sibling if they had a pet growing up, to visualize this conclusively we can add a mosaic plot to see the difference in the expected numbers between the different groups.
+
+```{r echo=FALSE}
+mosaicplot(tab, shade=TRUE, legend=TRUE, main="is there a difference in siblings for those with pets?")
+```

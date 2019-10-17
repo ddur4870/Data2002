@@ -1,0 +1,33 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1571327689270.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "28FD526C",
+    "lastKnownWriteTime" : 8028074750225051768,
+    "last_content_update" : 1571327689270,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "84ED881",
+        "caption" : "improved",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=improved&cache_key=84ED881",
+        "displayedObservations" : 1049,
+        "environment" : "",
+        "expression" : "improved",
+        "object" : "improved",
+        "preview" : 0,
+        "totalObservations" : 1049,
+        "variables" : 13
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

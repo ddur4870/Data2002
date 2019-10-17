@@ -1,0 +1,2 @@
+"0","plot(data$o_all_like, data$tender, main=""overall liking vs tenderness"","
+"0","   xlab=""over all like (/100) "", ylab=""Total tenderness (/100) "", pch=1)"

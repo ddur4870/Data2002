@@ -1,0 +1,996 @@
+---
+title: "Module 3 Report"
+author: '480386401'
+date: "17/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### Executive Summary
+
+The following report aims to assist in keeping those in the food industry, working with meat products (particularly beef), to compete with the growing number of popular meat alternatives, by determining if there's a statistically significant way of treating or preparing the meat to make it as delicious as possible. 
+
+In today's day and age, We are seeing a population that seems to have more attention put on alternatives to beef and other meats than we've seen before. Just running a quick Google search on the words 'beef' we can already see the top results are talking about the popularity of these growing number of meat alternatives, (https://www.today.com/food/there-s-growing-backlash-against-rise-fake-meat-here-s-t164597), with even fast food giants like Pizza Hut (https://www.news.com.au/lifestyle/food/eat/pizza-hut-launches-six-vegan-menu-items/news-story/887191fd191c90117f6766b5a7592c5b , 14/09/2019) and KFC (https://www.inc.com/peter-economy/kfc-just-revealed-a-stunning-new-product-that-is-a-huge-threat-to-popeyes-chick-fil-a-mcdonalds.html , 18/09/2019), releasing new vegan alternatives to popular meats, *Just last month, KFC did the unthinkable--testing two new plant-based, vegan fried "chicken" products in one of its Atlanta stores: nuggets and boneless wings.*. 
+
+So with this research we aim to assist those who are in the business of making real meat, the most delicious (and by extension as profitable) as we possibly can. 
+
+The following report was conducted to determine whether the **kiwifruit extract** method used on various meats, cooking methods, aging periods, differences between muscles, or a combination of these had any significant impact on how tender the meat was perceived to be, helping us to determine whether a certain treatment can help in finding optimum deliciousness for these stakeholders.
+
+### Data set used:
+
+Actinidin is an enzyme occurring in kiwifruit, potentially improving tenderness in red meat. The data set used by Lees et al. (2019) evaluated the effect on consumer opinions on strip loin, and outside flat cuts from 87 grass-fed cattle.
+
+Each cut was halved and allocated to one of the following two treatments: (1) not infused (control) and (2) infused with a kiwifruit extract (enhanced), and then aged for 10 or 28 days and prepared as grill or roast samples.
+
+Consumer evaluations for tenderness, juiciness, flavor, and overall liking were conducted using untrained consumer sensory panels (Polkinghorne et al. 2008).
+
+The outcome variable that we are primarily interested in is 'Tender' an average score from 10 different consumers each of whom assigned a “tenderness” score (ranging from 0-100).
+
+## Analysis
+
+
+#### Data Cleaning 
+
+Before diving into the specific questions surrounding the data, first we will examine the data set, and apply the relevant modifications for simplicity.
+
+```{r echo = FALSE, warning = FALSE, message=FALSE}
+library(readxl)
+library(janitor)
+library(emmeans)
+library(tidyverse)
+data = read_excel("C:/Users/My Account/Desktop/DATA2002/Module_3_report/infusions_data_2002.xlsx") %>% 
+  clean_names() %>% 
+  remove_empty()
+
+```
+
+The data set is filled with many irrelevant columns, so we will make a new data frame using the **select** function, only grabbing the data we know we will make use of. The column names of the variables we'll be using are workable so far, so we will not alter them.
+
+```{r}
+improved = data %>%
+  select(sequence, eqs_ref, key_1, cut,cook,d_aged, trial_notes,tender,juicy,flavour,o_all_like, satisfaction)
+
+head(improved)
+```
+### Does a tasters perception of tenderness correlate with the overall liking?
+
+In order for the teams analysis to make sense for the stakeholder this is the first question we must ask. If this is indeed in fact correlated then it can be said that the more tender a meat is the more likely the customer is to enjoy it.
+
+```{r echo = FALSE, warning = FALSE, message=FALSE}
+plot(data$o_all_like, data$tender, main="Overall Liking vs Tenderness",
+   xlab="over all like (/100) ", ylab="Total tenderness (/100) ", pch=1)
+```
+So we can immediately see that there is a strong positive correlation, so we shall now test the correlation coefficient to make sure of this:
+```{r echo = FALSE}
+res <- cor.test(data$o_all_like, data$tender, 
+                    method = "pearson")
+res
+```
+
+As we can see there is a 95% correlation and we can conclude that tenderness does affect overall satisfaction with the product.
+
+Now we can continue with the analysis and are able to link it to the stakeholders, with evidence. 
+
+### Does the kiwifruit extract treatment improve tenderness? Is there an interaction between this and other factors?
+
+Before going into in depth analysis whether this is true or not we will first have a look at the raw data to see if we can see any general trends. The chart below, shows the proportion of values to see if we can conduct any paired tests. 
+
+```{r echo = FALSE, warning = FALSE, message=FALSE}
+ggplot(data = data) + 
+  geom_bar(mapping = aes(x = trial_notes, y = ..prop.., group = 1), stat = "count") +
+  labs(x = "", y = "Proportion of Treatments",
+      title = "Proportion of Meats, Treated vs Controlled") + 
+  coord_flip() + 
+  theme_linedraw() + scale_y_continuous(labels = scales::percent_format())
+```
+
+As the output shows, there are a lot more observations of meats with the treatment, compared to those without it (the controls). Thus we will run a quick t-test, to see whether overall there's a difference in the two methods. We will rely on the central limit theorem here to fulfill the assumption of normality.
+
+```{r}
+t.test(tender ~ trial_notes, data = data)
+```
+```{r echo = FALSE, warning = FALSE, message=FALSE}
+improved %>% ggplot(aes(x = trial_notes , y = tender, fill = trial_notes)) + 
+  geom_boxplot() + coord_flip() + 
+  theme_classic() +
+  labs(y = "Tenderness Score (/100)", x = "Type of Treatment",fill="", title = "Tenderness Score, Treated vs Controlled") 
+```
+
+When taking a closer look at the two box plots, it doesn't seem as though there's a huge difference like the t-test seems to suggest, the means are roughly close and the distributions look similar, although there does seem to be a more skewed interquartile range, thus we will continue to analyse using ANOVA to ensure that we get the same overall result as the t test.
+
+```{r}
+summary(aov(tender ~ trial_notes, data = improved))
+```
+
+As we can see, there doesn't seem to be a difference in the result between the 2 sample t test and the anova test. The one-way analysis of variance (ANOVA) is used to determine whether there are any statistically significant differences between the means of two or more independent (unrelated) groups, in our case these are the treatment on the meats as a whole. We wouldn't normally use the anova here as it is mostly used when there are a minimum of three, rather than two groups. However, it is good to see that both tests produce the same result.
+
+##### Question Summary:
+
+Hypotheses: 
+**H0**: that the population means of the groups is the same, in this case treated population mean = the population mean of the untreated mean
+**H1**: that the population means of the group are NOT the same
+
+Assumptions:
+   - all samples from each group are normally distributed about the group population mean with the group population variance
+   - all samples from each group are independent of the samples from the other group
+   - observations in each group are iid (independent and identically distributed)
+   
+Test Statistic:
+In this case its the mean square of the treatment/not treatment divided by the mean square of the residuals, Under H0, T ~ F(g-1)(n-g), where g is the number of groups. 
+
+Observed test Statistic:
+16.22
+
+P-value:
+6.06e-05
+
+Decision:
+As the p-value is less than 0.05, we reject the null hypothesis that the mean tenderness of meat are the same whether treated with enzymes or not.
+
+
+### Are there differences between cooking methods? 
+
+So when comparing the treatment of the kiwi-enzymes to those that were not treated by that alone, we see that there is definitely a relationship and that these are different. However now we are going to consider another variable in the data set, being *cooking methods*, In this section we will analyse whether there is a relationship between tenderness and cook. The next will ask whether there is a specific combo of the treated (i.e. have been given the enzymes) and the way the meat has been cooked that achieves a significantly different result, i.e a specific combo when used together achieves much better/worse than the rest of the combos. 
+
+The following changes the values in the 'cook' colomn to be more intuitive. 
+```{r echo = TRUE, warning = FALSE, message=FALSE}
+improved$cook[improved$cook=="GRL"] <- "Grilled"
+improved$cook[improved$cook=="RST"] <- "Roast"
+improved$cook[improved$cook=="RST-C10"] <- "cold roast 10mm"
+improved$cook[improved$cook=="RST-C2"] <- "cold roast 2mm"
+```
+
+First though we will be using ANOVA to complete this analysis so the assumptions of equal variance and normality must be checked.
+```{rr echo = FALSE, warning = FALSE, message=FALSE}
+improved %>% ggplot(aes(x = cook, y = tender, fill = trial_notes)) + 
+  geom_boxplot() + coord_flip() + 
+  theme_classic()
+```
+
+```{r echo = FALSE, warning = FALSE, message=FALSE}
+improved %>% ggplot(aes(sample = tender, colour = trial_notes)) + 
+  geom_qq() + geom_qq_line() + 
+  facet_grid(~cook) + 
+  theme_classic()
+```
+
+
+As we can see when performing the checks on the assumptions for the anova test, we see that these QQplots tail off toward the ends so we will consider a transformation to get them to go closer to the QQ line, in order to satisfy the assumption of normality. When looking at the Box plots they seem to be roughly symmetrical to indicate normality, and the lack of skewing in the interquartile ranges seems to indicate a equal variance across groups.
+
+We will try to exemplify this with some transformations on the qqplot to get them closer to the line:
+
+```{r echo = FALSE, warning = FALSE, message=FALSE}
+improved %>% ggplot(aes(sample = log(tender), colour = trial_notes)) + 
+  geom_qq() + geom_qq_line() + 
+  facet_grid(~cook) + 
+  theme_classic() +
+  labs(title = "QQPLOT with logged tenderness score") 
+```
+```{r echo = FALSE, warning = FALSE, message=FALSE}
+improved %>% ggplot(aes(sample = (tender)^(1/3), colour = trial_notes)) + 
+  geom_qq() + geom_qq_line() + 
+  facet_grid(~cook) + 
+  theme_classic() +
+  labs(title = "QQPLOT taking cube root of tenderness score") 
+```
+
+
+When looking at the two samples, we can see that the distance from the qqline doesn't really change in a way that helps us, although plot is not ridiculously far off the theoretical value, we will go through both the normally distributed procedure and non normal, to decide if there is a difference. 
+
+Before performing a few anova tests we will have a quick look at the individual stats for the various groups, to make a prediction whether there will be a significant difference between them.
+
+```{r}
+cook_sum = improved %>% group_by(cook) %>% summarise(mean = mean(tender), median = median(tender), sd = sd(tender), iqr = IQR(tender), n= n())
+cook_sum
+```
+As we can see the values seem close, although there is definitely a difference between the tenderness of the cold roast 2mm slice having a higher degree of tenderness, however this could be due to a much smaller sample size, although unlikely seeing there are already 108 observations. Another potential way to make this prediction is to compare these means to the population mean of the whole thing. 
+
+```{r}
+mean(improved$tender)
+```
+As we can see above the cold roast 2mm seems to be much higher than this compared to the others, so it is most likely this that will cause a significant difference. 
+
+In order to visualise this see the boxplot provided below, the cold roast 2mm is slighly higher than the rest of the plots on the tenderness scale.
+
+```{r echo = FALSE, warning = FALSE, message=FALSE}
+ggplot(improved, 
+       aes(y = tender, x = cook, 
+           colour = cook)) +
+  geom_boxplot() + 
+  geom_jitter(width=0.5, size = 0.5) + 
+  theme_bw() + 
+  theme(legend.position = "none") +
+  labs(y = "Tenderness Score (/100)",
+       x = "Way meat has been cooked")
+```
+
+
+We will now check to see the p-val of the ANOVA test (likely hood that the null hypothesis (that all group means are the same) given the values we have observed), as we are using the default aov function the alpha, is 0.05, meaning these are 95% confidence intervals. 
+
+```{r}
+a1 = (aov(tender ~ cook, data = improved))
+a1
+summary(a1)
+```
+What the above anova is saying to us is that assuming the null hypothesis is true, in our case we're saying all the assumptions are fulfilled and all the different groups/samples, i.e. the type of cook (at the moment regardless of whether the treatment has been applied or not). So what this p-value is saying to us is that there is in fact sufficient evidence to say that not all cooking methods provide the same mean tenderness score. 
+
+From the guess before I think that it is most likely it is the roast 2mm, caused such a small p-value, we can safely refute the null hypothesis here and say that there is a difference in average tenderness across the different types of cooks. 
+
+We will determine whether there is a particular group that is dragging the anova down by checking the contrasts. contrasts are basically differences in the means between groups. Because anova is testing whether all group means are the same, we expect this contrast, across all the groups to be 0. 
+
+```{r}
+sum_stat = improved %>% 
+  group_by(cook) %>% 
+  summarise(n_i = n(),
+            ybar_i = mean(tender),
+            v_i = var(tender))
+sum_stat
+n_i = sum_stat %>% pull(n_i)
+ybar_i = sum_stat %>% pull(ybar_i)
+v_i = sum_stat %>% pull(v_i)
+```
+
+We will consider the contrasts of each group and the standard errors to determine whether there are particular groups that definitely do not have a population mean, mu, the same as the rest. We will also use the **bonferroni adjustment** to ensure that the observations have Simultaneous (at least) 95% confidence intervals when considering all the groups not just the others.we want to ensure all intervals cover their corresponding true values simultaneously. 
+
+```{r}
+cook_em = emmeans(a1, ~ cook)
+confint(pairs(cook_em, adjust = "bonferonni"))
+```
+```{r echo=FALSE, message=FALSE,warning=TRUE}
+confint(cook_em, adjust = "bonferroni") %>% plot(colors = "black") + theme_classic() + geom_vline(xintercept = 54.46)
+```
+
+```{r echo=FALSE, message=FALSE,warning=TRUE}
+confint(pairs(cook_em, adjust = "bonferonni")) %>% plot(colors = "black") + 
+  theme_classic() + geom_vline(xintercept = 0)
+```
+
+So, even though we "adjusted for multiplicity", the "cold roast 10mm- cold roast 2mm" and the "cold roast 2mm - grilled" contrast difference is still significant, in the sense that the corresponding interval does not include zero. We can also clearly see that the "cold roast 2mm" doesn't even lie within the global mean, so what we can conclude here is that, the population mean of 2mm roast is definitely different to the others, particularly being different from the 'grilled' cook method and the 'cold roast 10mm' cook method.
+
+We will now get a p-value for this to confirm.
+```{r}
+test(cook_em, adjust = "bonferroni")
+```
+```{r}
+test(pairs(cook_em, adjust = "bonferroni"))
+```
+
+So even using the conservative Bonferroni adjustment we can say that none of these variables of the cooking method have the same population mean as we expected in our null hypothesis, however we know that particularly that the cold 2mm roast cooking method is more tender than the other types of cooking. 
+
+However, all of this is under the assumption that the data fulfills the anova assumptions, below is a kruskal test to make sure that the result remains consistent even when assuming the data doesn't satisfy the anova assumptions.
+
+```{r}
+kruskal.test(tender ~ as.factor(cook), data = improved)
+```
+
+
+##### Question Summary:
+
+Hypotheses: 
+**H0**: that the population means across all the groups is the same, in this case every different way the meat is cooked, should still have the same mean tenderness. 
+
+**H1**: that at least one of the group population means are NOT the same
+
+Assumptions:
+   - all samples from each group are normally distributed about the group population mean with the group population variance
+   - all samples from each group are independent of the samples from the other group
+   - observations in each group are iid (independent and identically distributed)
+   
+Test Statistic:
+In this case its the mean square of the treatment/not treatment divided by the mean square of the residuals, Under H0, T ~ F(g-1)(n-g), where g is the number of groups. 
+
+Observed test Statistic:
+5.904 
+
+P-value:
+0.000539
+
+Decision:
+As the p-value is less than 0.05, we reject the null hypothesis that the mean tenderness of meat are the same no matter which way they're cooked.
+
+### Is there a combination of the cooking method and the test that produce a significant result?
+
+So having concluded that there is a significant difference between the type of cook and the tenderness of the meat, particularly being true for the cold roast 2mm slice, which was much more tender than it was estimated to be under the anova null hypothesis, we will now check whether there is some kind of interaction between the **cook** and the **treatment** that produces a significant result? i.e is there some specific combination that is worse or better than the rest?
+
+So the variables we will be using for this experiment is again, the **cook** being a categorical data type, stating the way the meat was prepared and can be seen below, 
+
+```{r echo=TRUE, message=FALSE,warning=TRUE}
+table(improved$cook)
+```
+ And the variable we will be using to test for an interaction effect is the **trial_notes** variable, indicating whether the meat was given the kiwi extract treatment or not.
+```{r echo=TRUE, message=FALSE,warning=TRUE}
+table(improved$trial_notes)
+```
+So when looking at the different combinations of the two treatments, we get the following table below:
+```{r echo=FALSE, message=FALSE,warning=TRUE}
+improved %>% 
+  group_by(cook, trial_notes) %>% 
+  count()
+```
+
+As we can see there a varying number of observations for each combination of the two. with the grilled and roast options having significantly more.
+
+Before going into some analysis we will check the assumptions whilst having a quick visualization to spot any trends.
+
+```{r echo=FALSE, message=FALSE,warning=TRUE}
+improved %>% ggplot() + 
+  aes(x = interaction(cook, trial_notes), y = tender, fill=interaction(cook, trial_notes)) +
+  geom_boxplot() + 
+  theme_classic() + 
+  labs(y = "Tenderness Score (/100)")
+```
+```{r echo=FALSE, message=FALSE,warning=TRUE}
+improved %>% ggplot() + 
+  aes(x = cook, y = tender, fill = cook) +
+  geom_boxplot() + 
+  theme_classic() + 
+  facet_wrap(~trial_notes, ncol = 2) + 
+  labs(y = "Tenderness")
+```
+
+As we can see the data looks roughly normal and seems to have mostly the same variance, it's not perfect, but we do have 1024 observations to work with, more than 30 for each group, so we can say that the central limit theorem can be relied on for this one. 
+
+We first fit the full model (the "big 1-way ANOVA") below, to determine whether there is a treatment effect.
+
+```{r}
+a1 = aov(tender ~ cook:trial_notes, data = improved)
+anova(a1)
+```
+ 
+We have already determined in previous questions that there is in fact a significant difference between the groups, i.e. we already know that both the **cook** and **trial_notes** variables are not the same, so we need to make sure that the interaction we're taking note of is saying, "is there a significant difference in the interactions between the two groups, that isn't already just simply down to the differences in means of those two other variables. 
+The following test below will provide us with our answer:
+
+```{r}
+a3 = aov(tender ~ cook + trial_notes + cook:trial_notes, 
+         data = improved)
+summary(a3)
+```
+
+So as we can see above all three of the p values we have observed are below our alpha 0.05 level of significance. What this is telling us is that 1. there is definitely a difference in the means of the type of cook and whether the treatment has been applied or not, but also 3. There is some kind of combo of the two that is significant that can't simply be explained by the difference in the method or type of cook done to that specific trial. 
+
+We will observe this below in an interaction plot, if there is a cross over in between the lines this suggests a significant interaction effect.
+
+```{r}
+sum_dat = improved %>% group_by(cook, trial_notes) %>% 
+  summarise(mean = mean(tender))
+glimpse(sum_dat)
+```
+```{r}
+sum_dat %>% spread(key = cook, value = mean)
+```
+```{r echo=FALSE, message=FALSE,warning=TRUE}
+sum_dat %>% 
+  ggplot(aes(x = trial_notes, y = mean,
+             group = cook, 
+             linetype = cook,
+             colour = cook)) + 
+  geom_point() +
+  geom_line() + 
+  theme_classic()
+```
+This is equivalent if we switch the axis's, making things easier to potentially get a better view. 
+```{r echo=FALSE, message=FALSE,warning=TRUE}
+sum_dat %>%
+  ggplot(aes(x = cook, y = mean,
+             group = trial_notes, 
+             linetype = trial_notes,
+             colour = trial_notes)) + 
+  geom_point() +
+  geom_line() + 
+  theme_classic()
+```
+
+There is a significant treatment effect, most notably with the **cold roast 10mm** which seems to buck the trend of the other cook types, rather than being improved by the treatment, it seems to say that the tenderness is better WITHOUT the treatment.
+
+We will go into some further analysis for this. For this case, we will retain the full model, we have a "big 1-way ANOVA". All pairwise comparisons between all treatment combinations are potentially of interest here, so we can use Tukey's all pairwise comparisons for further analysis.
+
+```{r echo=FALSE, message=FALSE,warning=TRUE, results='hide'}
+cook_aov = aov(tender ~ cook:trial_notes, data = improved)
+cook_emm = emmeans(cook_aov, ~ cook:trial_notes)
+contrast(cook_emm, method = "pairwise", adjust = "tukey")
+```
+```{r echo=FALSE, message=FALSE,warning=TRUE}
+plot(contrast(cook_emm, method = "pairwise", adjust = "tukey")) + 
+  theme_bw()+ geom_vline(xintercept = 0)
+```
+
+So as we can see from these plots, we can say that there are some differences that are particularly notable, being significant differences between, cold roast 10mm enhanced and cold roast 2mm enhanced, grilled control and roast enhanced, grilled control and grilled enhanced, grilled control and roast 2mm enhanced, and grilled control and cost roast 2mm enhanced.
+
+Strangely enough most of these seem to involve the grilled control, and the cold roast 2mm enhanced. With these in mind things we can take away from this investigation:
+
+  -  the grilled roast is largely improved by the kiwi extract method
+  - cold roast 10mm is greatly decreased in tenderness when the kiwi extract method is applied
+  
+##### Question Summary:
+
+Hypotheses: 
+**H0**: that there is no interaction effect in the model and differences can be explained by the differences in the factors alone.
+
+**H1**: the is an interaction effect
+
+Assumptions:
+   - all samples from each group are normally distributed about the group population mean with the group population variance
+   - all samples have equal variance
+
+Observed test Statistic:
+3.701
+
+P-value:
+0.011457
+
+Decision:
+
+as the p-val is below 0.05, we will reject the null hypothesis that there is in fact a small interaction effect taking place.
+
+
+
+
+### Are there differences between aging periods? 
+
+#### So Does Aging period alone have any effect on the meat's tenderness?
+
+So when comparing the treatment of the kiwi-enzymes to those that were not treated by that alone, we see that there is definitely a relationship and that these are different. However now we are going to consider another variable in the data set, being *days aged*, In this section we will analyse whether there is a relationship between tenderness and the days aged.
+As well as the usual test to link back to the overall idea of the report, whether there is a specific combo of the treated (i.e. have been given the enzymes) and the time the meat was aged that achieves a significantly different result, i.e a specific combo when used together achieves much better/worse than the rest of the combos.
+
+Before diving into this analysis we will first have a look at the variables we have been given, at the moment we have been working with categorical data against one continuous metric, however this will be a completely different kind of investigation if aging period too, is a continuous variable. 
+
+```{r}
+table(improved$d_aged)
+```
+So as we can see here these variables are actually just a categorical variable, they're either aged for 10 days or 28 days with no time in between that. So to avoid confusion in the further analysis we will re-code these variables into the data-frame, with strings rather than a double.
+
+```{r}
+improved$d_aged[improved$d_aged==10] <- "Aged 10 Days"
+improved$d_aged[improved$d_aged==28] <- "Aged 28 Days"
+tail(improved$d_aged)
+```
+
+We also take note of the fact that there's more cases in which the meat was aged for 10days rather than the 28 days. So take note of the fact that the n, number of observations are different. 
+
+Now because we will be using ANOVA to analyse this data, we must first check the assumptions of both normality and equal variance.This can be done by observing both the box plots and qqplots for all the groups in question and looking for symmetry in the box plot and hopefully no skewness, along with making sure the QQplot is close to the QQline.
+
+```{r}
+improved %>% ggplot(aes(x = d_aged, y = tender, fill = trial_notes)) + 
+  geom_boxplot() + coord_flip() + 
+  theme_classic()
+```
+
+So far these box plots don't seem to suggest a huge difference, although they do look relatively symmetrical and are all roughly int the same part of the graph, so the assumptions for normality and equal variance so far look okay, but we will still check the QQplots.
+
+```{r}
+improved %>% ggplot(aes(sample = (tender), colour = trial_notes)) + 
+  geom_qq() + geom_qq_line() + 
+  facet_grid(~d_aged) + 
+  theme_classic() +
+  labs(title = "QQPLOT taking cube root of tenderness score") 
+```
+
+These look okay, although there is a slight rise at the end and front taking the log, the square & cubed roots, and raising to a power all do not bring the points closer to the QQline.However due to the fact that there are >30 observations in each group the central limit theorem can be applied. *We will test without the assumptions after the analysis to ensure we get the same result.*
+
+Interesting things we can see already is that of the meats that were aged ten days, the plots seem to show that the enhanced seems to really be higher than the control. So we will investigate that in the 2-way anova in the second part of this question. 
+
+Before going into the ANOVA analysis we will have a look at the data to see if we can guess any of the trends before we get a result, by doing this we can have a better idea of post ANOVA analysis, if the ANOVA seems to suggest a different mu (average) for each sample, in this first case being the days aged, 
+
+```{r}
+aged_sum = improved %>% group_by(d_aged) %>% summarise(mean = mean(tender), median = median(tender), sd = sd(tender), iqr = IQR(tender), n= n())
+aged_sum
+```
+
+So immediately from looking at these raw stats we can see that the meat that was aged 28 days, seems to have a much larger mean than the meat only aged for 10 days, under the anova hypothesis the two group means are expected to be the population mean of all groups, as this assumes that all groups have the same mean. 
+```{R}
+mean(improved$tender)
+```
+
+As we can see both of the groups fall fairly close to this mean although each seems to take a definite side from the global mean.
+We can visualize this data using a box plot side by side:
+
+```{r}
+ggplot(improved, 
+       aes(y = tender, x = d_aged, 
+           colour = d_aged)) +
+  geom_boxplot() + 
+  geom_jitter(width=0.5, size = 0.5) + 
+  theme_bw() + 
+  theme(legend.position = "none") +
+  labs(y = "Tenderness Score (/100)",
+       x = "Days aged of the meat")
+```
+
+So as we can see there is definitely a slight shift in tenderness when the meat is aged for 28days rather than 10. Will the anova support this?
+
+```{r}
+a1 = (aov(tender ~ d_aged, data = improved))
+a1
+summary(a1)
+```
+
+From the ANOVA, we have been given a very small p-value, so this does indeed seem to confirm that there is a difference in means across groups, so logically from the visualizations we have seen, it makes sense to conclude that this difference is because the meat that has aged longer is more tender.
+
+As this is only a 2 by 2 we can also use a t-test to confirm our result,
+
+```{r}
+t.test(tender ~ d_aged, data = improved)
+```
+
+This also backs up our result and as the test is usually the go to in this situation we can be confident that there is a difference in the two.
+
+```{r}
+sum_stat = improved %>% 
+  group_by(d_aged) %>% 
+  summarise(n_i = n(),
+            ybar_i = mean(tender),
+            v_i = var(tender))
+sum_stat
+n_i = sum_stat %>% pull(n_i)
+ybar_i = sum_stat %>% pull(ybar_i)
+v_i = sum_stat %>% pull(v_i)
+```
+
+We will determine whether there is a particular group that is dragging the anova down by checking the contrasts. contrasts are basically differences in the means between groups. Because anova is testing whether all group means are the same, we expect this contrast, across all the groups to be 0. 
+
+We will consider the contrasts of each group and the standard errors to determine whether there are particular groups that definitely do not have a population mean, mu, the same as the rest. We will also use the **bonferroni adjustment** to ensure that the observations have Simultaneous (at least) 95% confidence intervals when considering all the groups not just the others.we want to ensure all intervals cover their corresponding true values simultaneously. 
+
+```{r}
+aged_em = emmeans(a1, ~ d_aged)
+confint(pairs(aged_em, adjust = "bonferonni"))
+```
+```{r}
+confint(aged_em, adjust = "bonferroni") %>% plot(colors = "black") + theme_classic() + geom_vline(xintercept = 54.46)
+```
+
+```{r}
+confint(pairs(aged_em, adjust = "bonferonni")) %>% plot(colors = "black") + 
+  theme_classic() + geom_vline(xintercept = 0)
+```
+
+So as we can see what these graphs show us, is that the mean is indicated by the line coming up on the x axis, if the ANOVA null hypothesis (all groups averages are the same), then we should expect each group to have an average somewhat near there, however instead what we see is that the mean of the aged 28 days is much higher and the mean of the aged 10 days is much lower, thus we can refute the null hypothesis. 
+
+findings:
+  - there is a difference between tenderness for meats aged 10 days and 28 days
+  - meats aged longer tend to be more tender than those that have been aged for a shorter time
+  
+One potential problem is that we assumed that the assumptions of ANOVA were satisfied in order to complete the analysis, despite not being 100% sure, in order to conclude that this produces the same result had the samples NOT been normally distributed/equal variance, we run the following test below to relax these assumptions.
+```{r}
+kruskal.test(tender ~ as.factor(d_aged), data = improved)
+```
+As we can see the result is the same and we can conclude that the result is correct. 
+
+##### Question Summary:
+
+Hypotheses: 
+**H0**: that the population means across all the groups is the same, in this case whether the meat is aged 10days or 28 days, should still have the same mean tenderness. 
+
+**H1**: that one of the group population means are NOT the same
+
+Assumptions:
+   - all samples from each group are normally distributed about the group population mean with the group population variance
+   - all samples from each group are independent of the samples from the other group
+   - observations in each group are iid (independent and identically distributed)
+   
+Test Statistic:
+In this case its the mean square of the treatment/not treatment divided by the mean square of the residuals, Under H0, T ~ F(g-1)(n-g), where g is the number of groups. 
+
+Observed test Statistic:
+12.65 
+
+P-value:
+0.000392
+
+Decision:
+As the p-value is less than 0.05, we reject the null hypothesis that the tenderness is the same whether the meat is aged 10days or aged 28days.
+
+#### So are is there a combination of the aging period and the enzyme treatment that produce a significant difference in tenderness?
+
+So having concluded that there is a significant difference between the time the meat has been aged and the tenderness of the meat, specifically that 28day aged meats are more tender than 10day aged meats, we will now check whether there is some kind of interaction between the **days aged** and the **treatment** that produces a significant result? i.e is there some specific combination that produces a strangely higher or lower tenderness value than the rest?
+
+So the variables we will be using in this experiment are, the **d_aged** being a categorical data type, indicating the time the meat was aged, the variable we will be using to test for an interaction effect is the **trial_notes** variable, indicating whether the meat was given the kiwi extract treatment or not.
+
+```{r}
+improved %>% 
+  group_by(d_aged, trial_notes) %>% 
+  count()
+```
+As we can see there a varying number of observations for each combination, with the aged ten day control having much more than the rest.
+
+Before going into some analysis we will check the assumptions whilst having a quick visualization to spot any trends.
+
+```{r}
+improved %>% ggplot() + 
+  aes(x = interaction(d_aged, trial_notes), y = tender, fill=interaction(d_aged, trial_notes)) +
+  geom_boxplot() + 
+  theme_classic() + 
+  labs(y = "Tenderness Score (/100)")
+```
+```{r}
+improved %>% ggplot() + 
+  aes(x = d_aged, y = tender, fill = d_aged) +
+  geom_boxplot() + 
+  theme_classic() + 
+  facet_wrap(~trial_notes, ncol = 2) + 
+  labs(y = "Tenderness", x="days aged")
+```
+
+So immediately we can see that the assumptions look mostly okay, with the equal variance looking alright, and the normality (symmetry) on the box plots looks okay also, there is one that is slightly behind the rest though and this seems to be "aged ten days, control". 
+
+What this seems to suggest is that when the treatment was given to the meats, the age didn't seem to affect the tenderness, however when there was no treatment given to the meat, the age did seem to affect the tenderness. 
+
+We will first confirm there is a treatment effect using full model (the "big 1-way ANOVA") below
+
+```{r}
+a1 = aov(tender ~ d_aged:trial_notes, data = improved)
+anova(a1)
+```
+ 
+We have already determined in previous questions that there is in fact a significant difference between the groups, i.e. we already know that both the **days aged** and **treatment applied** variables are not the same, so we need to make sure that the interaction we're taking note of is saying, "is there a significant difference in the interactions between the two groups, that isn't already just simply explained by a difference in means of those two other variables.
+
+The following test below will provide us with our answer:
+
+```{r}
+b3 = aov(tender ~ d_aged + trial_notes + d_aged:trial_notes, 
+         data = improved)
+summary(b3)
+```
+
+So from above we can see that accounting for the interaction between the two variables there is still, reason to believe that there is a treatment effect that can't simply be explained by the differing values for tenderness considering the days aged, and the application of the kiwi enzymes.  
+
+We will observe this below in an interaction plot, if there is a cross over in between the lines this suggests a significant interaction effect.
+
+```{r}
+sum_dat = improved %>% group_by(d_aged, trial_notes) %>% 
+  summarise(mean = mean(tender))
+glimpse(sum_dat)
+```
+```{r}
+sum_dat %>% spread(key = d_aged, value = mean)
+```
+```{r}
+sum_dat %>% 
+  ggplot(aes(x = trial_notes, y = mean,
+             group = d_aged, 
+             linetype = d_aged,
+             colour = d_aged)) + 
+  geom_point() +
+  geom_line() + 
+  theme_classic()
+```
+
+This is equivalent if we switch the axis's, making things easier to potentially get a better view. 
+
+```{r}
+sum_dat %>%
+  ggplot(aes(x = d_aged, y = mean,
+             group = trial_notes, 
+             linetype = trial_notes,
+             colour = trial_notes)) + 
+  geom_point() +
+  geom_line() + 
+  theme_classic()
+```
+
+So what we can see above is that although the p-value  suggested that there would be a cross over in the groups, we don't see this, this is indicative not indicative of a strong treatment effect. 
+
+However what these plots do say to us is that for the control group there is a dramatic increase in tenderness as the age increases, whereas if it's treated, there only seems to be a minimal increase. 
+
+For further analysis we will continue to push forward saying there is an interaction effect due to the p-value being significant, however because the lines don't cross we can't say its a strong effect because we are going to say there is not a String interaction effect between the two variables, we will look into the levels between the two groups independently.
+
+
+
+```{r}
+aged_aov = aov(tender ~ d_aged:trial_notes, data = improved)
+aged_emm = emmeans(aged_aov, ~ d_aged:trial_notes)
+contrast(aged_emm, method = "pairwise", adjust = "tukey")
+```
+
+
+```{r}
+plot(contrast(aged_emm, method = "pairwise", adjust = "tukey")) + 
+  theme_bw()+ geom_vline(xintercept = 0)
+```
+
+From these plots, there are 3 contrasts that are significant,  the difference between 10 days control and 28 days control, the difference between 10 days control and 28 days controlled, the difference between 10 days control and 28 days enhanced. 
+
+Strangely enough most of these seem to involve the 10 days control, suggesting that this is mean is much lower than the others, which it shouldn't be under the null hypothesis. With this in mind things we can take away from this investigation:
+
+  -  enhancing the meat with the kiwi extract will greatly improve the tenderness if your going to age it for ten days.
+  - enhancing the meat has a very small effect if you're going to age it for 28 days
+  
+##### Question Summary:
+
+Hypotheses: 
+**H0**: that there is no interaction effect in the model and differences can be explained by the differences in the factors alone.
+
+**H1**: the is an interaction effect
+
+Assumptions:
+   - all samples from each group are normally distributed about the group population mean with the group population variance
+   - should have equal variance across groups
+
+Observed test Statistic:
+6.807
+
+P-value:
+0.009211
+
+Decision:
+
+as the p-val is below 0.05, we will reject the null hypothesis that there is in fact an interaction effect taking place.
+
+
+
+
+### Are there differences between muscles?
+
+
+So we know now from previous questions that there is an effect on tenderness from many factors including; the enzyme treatment, the cook of the meat, the days it has been aged, and the interaction between these variables. Now we will check another factor, being **muscle** to see whether it has an impact on tenderness by itself, and we will also be testing whether there is an interaction affect between muscle and the enzyme treatment being applied or not.
+
+We will have a look at the variable first, to see if it needs any further cleaning or tampering for clarity. As outlined earlier *CUT* is the muscle the sample is from: **OUT005** for outside flat, **STR045** for strip loin and **TDR062** for tenderloin
+
+```{r}
+table(improved$cut)
+```
+These variables aren't overly intuitive so we will go ahead and change these to the more intuitive names.
+
+```{r}
+improved$cut[improved$cut=="OUT005"] <- "outside-flat"
+improved$cut[improved$cut=="STR045"] <- "striploin"
+improved$cut[improved$cut=="TDR062"] <- "tenderloin"
+table(improved$cut)
+```
+
+We take note of the number of each variable, with tenderloin having much less than the rest, although still much more than 30, the minimum n for relying on the central limit theorem. 
+
+Now because we will be using ANOVA to analyse this data, we must first check the assumptions of both normality and equal variance.This can be done by observing both the box plots and qqplots for all the groups in question and looking for symmetry in the box plot and hopefully no skewness, along with making sure the QQplot is close to the QQline.
+
+```{r}
+improved %>% ggplot(aes(x = cut, y = tender, fill = trial_notes)) + 
+  geom_boxplot() + coord_flip() + 
+  theme_classic()
+```
+So far these box plots don't seem to suggest a huge difference, although they do look relatively symmetrical and are all roughly int the same part of the graph, so the assumptions for normality and equal variance so far look okay, but we will still check the QQplots.
+
+```{r}
+improved %>% ggplot(aes(sample = (tender), colour = trial_notes)) + 
+  geom_qq() + geom_qq_line() + 
+  facet_grid(~cut) + 
+  theme_classic() +
+  labs(title = "QQPLOT of tenderness score") 
+```
+
+From the qqplot we can see that there needs not be any transformation on the data although there is a slight problem in that the tenderloin cut doesn't seem to have any Enhanced trials, which is strange as it makes you wonder why they put it in in the first place. immediately we can also see though that the enhanced trials seem to score higher in tenderness than those that aren't. Taking that into consideration later we will first assess only whether the cut itself has an effect on the tenderness, later we will follow up with a potential interaction affect with the type of trial.
+
+
+Before going into the ANOVA analysis for whether a certain cut has a higher tenderness score,  we will have a look at the data to see if we can guess any of the trends before we get a result. 
+
+```{r}
+aged_sum = improved %>% group_by(cut) %>% summarise(mean = mean(tender), median = median(tender), sd = sd(tender), iqr = IQR(tender), n= n())
+aged_sum
+```
+
+So immediately from looking at these raw stats we can see that there's a bigger gap between the means then there has been in previous questions. We will compare these to the global mean below, (anova expects each group to have a mean the same)
+```{R}
+mean(improved$tender)
+```
+Two of the groups are close to the mean, with the tenderloin being the standout far above the rest. As the meat's name is "TENDERloin" this makes sense. 
+We can visualize this data using a box plot side by side:
+
+```{r}
+ggplot(improved, 
+       aes(y = tender, x = cut, 
+           colour = cut)) +
+  geom_boxplot() + 
+  geom_jitter(width=0.5, size = 0.5) + 
+  theme_bw() + 
+  theme(legend.position = "none") +
+  labs(y = "Tenderness Score (/100)",
+       x = "type of meat cut")
+```
+
+So far the data seems to suggest that there's definately a difference in tenderness between the groups. The data so far seems to indicate tenderloin being the most tender, with a smaller standard dev than the rest which are much lower.
+
+To confirm that this is in fact the case we shall use an anova test:
+
+```{r}
+a1 = (aov(tender ~ cut, data = improved))
+a1
+summary(a1)
+```
+
+So as we can see from the ANOVA, we have been given a very small p-value, so this does indeed seem to confirm that there is a difference in means across groups, so logically from the visualizations we have seen, it makes sense to conclude that this difference is because the tenderloin is more tender than the rest and the outside flat is less tender than the rest.
+
+Findings:
+  - The type of cut of the meat does increase the tenderness of the meat
+  - The most tender type of meat is the tenderloin
+  - The least tender is the outside flat cut.
+  
+##### Question Summary:
+
+Hypotheses: 
+**H0**: that the population means across all the groups is the same, in this case whether the meat is a tenderloin, flat cut or strip loin, it should still have the same mean tenderness. 
+
+**H1**: that at least one of the group population means are NOT the same
+
+Assumptions:
+   - all samples from each group are normally distributed about the group population mean with the group population variance
+   - all samples from each group are independent of the samples from the other group
+   - observations in each group are iid (independent and identically distributed)
+   
+Test Statistic:
+In this case its the mean square of the treatment/not treatment divided by the mean square of the residuals, Under H0, T ~ F(g-1)(n-g), where g is the number of groups. 
+
+Observed test Statistic:
+476.7
+
+P-value:
+<2e-16
+
+Decision:
+As the p-value is less than 0.05, we reject the null hypothesis that the tenderness is the same whether no matter what cut you are having.
+
+#### So is there any interaction between the cut of the meat and whether the kiwi enzyme has been applied or not?
+
+
+```{r}
+sum_dat = improved %>% group_by(cut, trial_notes) %>% 
+  summarise(mean = mean(tender))
+glimpse(sum_dat)
+```
+```{r}
+sum_dat %>% spread(key = cut, value = mean)
+```
+So as we can see there doesn't seem to be sufficient data to analyse for all three of the meat cuts, instead we shall create a new data frame containing only outside-flat and strip-loin. 
+```{r}
+enzyme_cut = improved %>% 
+filter(cut == "outside-flat"| cut == "striploin")
+dim(enzyme_cut)
+```
+so as we can see we have filtered out the tenderloin value and instead choose to only use the other two options for this analysis.
+
+So we know already that both the cut and the enzyme treatment does have an effect on the tenderness. But now we want to know if there's any notable mix of the two that can't simply be explained by these differences. 
+
+```{r}
+enzyme_cut %>% 
+  group_by(cut, trial_notes) %>% 
+  count()
+```
+The above shows that there are now roughly the same amount of observations for every mix of the two variables.
+
+We shall check the assumptions on both of these variables first to see if they're satisfied as well as making some early predictions about what potential results of the experiment will be.
+
+```{r}
+p1 = ggplot(enzyme_cut, aes(x = cut, y = tender)) + 
+  geom_boxplot() + labs(y = "Tenderness") + theme_classic()
+p2 = ggplot(enzyme_cut, aes(x = trial_notes, y = tender)) + 
+  geom_boxplot() + labs(y = "Tenderness", x= "type of trial") + theme_classic()
+gridExtra::grid.arrange(p1, p2, ncol = 2)
+```
+
+So as stated before we already know that there's a difference between the cut of the meat and the tenderness and there's also a difference in the tenderness when the treatment of the enzymes is applied or not.
+
+Regarding the assumptions both of the variables have a difference however the normality and the variance is fine to assume is fine, especially seeing we've already gone into the details previously in the report.
+
+So now we shall check the one way anova:
+```{r}
+d = aov(tender ~ trial_notes:cut, data = enzyme_cut)
+summary(d)
+```
+
+As we can see there seems to be an interaction effect, so we will now partition the treatment sum of squares into main effects and interactions:
+```{r}
+enzymecut_aov = aov(tender ~ trial_notes * cut, data = enzyme_cut)
+summary(enzymecut_aov)
+```
+So now we can see that the value of the trial and of the cut are very small (which we already knew from prior questions), However the interaction of the 2 seems to account for a significant result as well.
+```{r}
+enzyme_dat = enzyme_cut %>% 
+  group_by(cut, trial_notes) %>% 
+  summarise(mean = mean(tender))
+enzyme_dat
+```
+```{r}
+enzyme_dat %>% 
+  spread(key = cut, value = mean)
+```
+```{r echo=FALSE, message=FALSE,warning=TRUE}
+d1 = enzyme_dat %>%
+  ggplot(aes(x = trial_notes, y = mean,
+             group = cut, 
+             linetype = cut)) + 
+  geom_point() +
+  geom_line() + 
+  theme_classic()
+
+d2 = enzyme_dat %>% 
+  ggplot(aes(x = cut, y = mean,
+             group = trial_notes, 
+             linetype = trial_notes)) + 
+  geom_point() +
+  geom_line() + 
+  theme_classic()
+gridExtra::grid.arrange(d1, d2, ncol = 2)
+```
+
+There doesn't seem to be any cross over and the lines seem to be somewhat parallel, so if there is indeed some form of an interaction effect, then it is not immediately obvious and will require a closer look into the contrasts to determine some more interesting information.
+
+```{r}
+enzyme_aov = aov(tender ~ cut:trial_notes, data = enzyme_cut)
+enzyme_emm = emmeans(enzyme_aov, ~ cut:trial_notes)
+contrast(enzyme_emm, method = "pairwise", adjust = "tukey")
+```
+```{r echo=FALSE, message=FALSE,warning=TRUE}
+plot(contrast(enzyme_emm, method = "pairwise", adjust = "tukey")) + 
+  theme_bw()
+```
+
+None of the groups really come close to where they're expected to be, however I think that this really comes down to the difference between the two groups, Due to the differences in gradient on the graphs though the conclusion to be drawn from this are:
+
+Findings:
+  - Although enhancing with the kiwi enzyme improves both meats dramatically, the enhancement is slightly more effective on the strip loin meat
+  
+##### Question Summary:
+
+Hypotheses: 
+**H0**: that there is no interaction effect in the model and differences can be explained by the differences in the factors alone.
+
+**H1**: the is an interaction effect
+
+Assumptions:
+   - all samples from each group are normally distributed about the group population mean with the group population variance
+   - all samples from each group are independent of the samples from the other group
+   - observations in each group are iid (independent and identically distributed)
+
+Observed test Statistic:
+4.523
+
+P-value:
+0.0337
+
+Decision:
+
+as the p-val is below 0.05, we will reject the null hypothesis that there is in fact a small interaction effect taking place.
+
+## Findings Summary
+
+So through our analysis we have answered questions for the stakeholder outlined at the start of the Report, as our first question established a clear correlation between tenderness and enjoyment, our report investigating the effects of the kiwi extract enzyme on tenderness can thus be of benefit. As consumers will associate tender meats with more enjoyable meats, helping to stay competitive in a ever changing market. 
+
+**So what did we find out about the enzyme treatment by itself?**
+
+The stats provide strong evidence that this treatment affects the tenderness of meat, upon looking at the visualizations it can be said that there is strong evidence suggesting that this treatment improved meat tenderness. 
+
+**Is there a particular cooking method that improves meats tenderness?**
+
+The analysis provides strong evidence that tenderness is impacted by the cooking method of the meat, one that stood out particularly was the cold 2mm roast cooking method which was more tender than the other types of cooking.
+
+**Did the time period (10 or 28 days) have an impact on tenderness?**
+
+The analysis found that there was strong evidence to say that meat that was aged by 28 days was more tender than meat that was only aged for 10. 
+
+**Did the cut (muscle) of the meat have an affect on the tenderness?**
+
+The analysis found extremely strong evidence that the type of cut of the meat, does increase the tenderness of the meat. The most tender type of meat is the tenderloin, the least tender is the outside flat cut. 
+
+**So were there any interesting findings when using the kiwi enzyme treatment on either the cooking method, the aging period, or cut of the meat?**
+
+There was in fact an interesting interaction for all three of these factors when examined considering the treatment of the meat. 
+
+*cooking method and enzyme treatment combo*
+
+Despite finding already that these two factors each had a significant impact on the tenderness, when the two were considered at once it was found:
+  -  grilled meats tenderness is largely improved by the kiwi extract method
+  - cold roast 10mm is greatly decreased in tenderness when the kiwi extract method is applied
+  
+*aged period and enzyme treatment combo*
+Again it was already found that these two factors had a significant effect on tenderness by themselves, when considering the two together the following interesting results were obtained:
+  -  enhancing the meat with the kiwi extract will greatly improve the tenderness if your going to age it for ten days.
+  - enhancing the meat has a very small effect if you're going to age it for 28 days
+  
+*cut of the meat and enzyme treatment combo*
+As above both of these factors impacted the tenderness of the meat by themselves, but when considered together there was a small finding that:
+- Although enhancing with the kiwi enzyme improves both meats dramatically, the enhancement is slightly more effective on the strip loin meat.
+
+
+
+

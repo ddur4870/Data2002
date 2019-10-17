@@ -1,0 +1,5 @@
+"0","improved %>% ggplot(aes(sample = (tender), colour = trial_notes)) + "
+"0","  geom_qq() + geom_qq_line() + "
+"0","  facet_grid(~cut) + "
+"0","  theme_classic() +"
+"0","  labs(title = ""QQPLOT of tenderness score"") "

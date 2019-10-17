@@ -1,0 +1,4 @@
+"0","improved = data %>%"
+"0","  select(sequence, eqs_ref, key_1, cut,cook,d_aged, trial_notes,tender,juicy,flavour,o_all_like, satisfaction)"
+"0",""
+"0","head(improved)"

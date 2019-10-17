@@ -1,0 +1,94 @@
+---
+title: "Module 3 Report"
+author: '480386401'
+date: "17/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### Executive Summary
+
+The following report aims to assist in keeping those in the food industry, working with meat products (particularly beef), to compete with the growing number of popular meat alteratives, by determining if there's a statistically significant way of treating or preparing the meat to make it as delicious as possible. 
+
+In today's day and age, We are seeing a population that seems to have more attention put on alternatives to beef and other meats than we've seen before. Just running a quick google search on the words 'beef' we can already see the top results are talking about the popularity of these growing number of meat alternatives, (https://www.today.com/food/there-s-growing-backlash-against-rise-fake-meat-here-s-t164597), with even fast food giants like Pizza Hut (https://www.news.com.au/lifestyle/food/eat/pizza-hut-launches-six-vegan-menu-items/news-story/887191fd191c90117f6766b5a7592c5b , 14/09/2019) and KFC (https://www.inc.com/peter-economy/kfc-just-revealed-a-stunning-new-product-that-is-a-huge-threat-to-popeyes-chick-fil-a-mcdonalds.html , 18/09/2019), releasing new vegan alternatives to popular meats, *Just last month, KFC did the unthinkable--testing two new plant-based, vegan fried "chicken" products in one of its Atlanta stores: nuggets and boneless wings.*. 
+
+So with this research we aim to assist those who are in the business of making real meat, the most delicious (and by extension as profitable) as we possibly can. 
+
+The following report was conducted to determine whether the **kiwifruit extract** method used on various meats, cooking methods, aging periods, differences between mucles, or a combination of these had any significant impact on how tender the meat was percieved to be, helping us to determine whether a certain treatment can help in finding optimum deliciousness for these stakeholders.
+
+### Data set used:
+
+Actinidin is an enzyme occuring in kiwifruit, potentially improving tenderness in red meat. The data set used by Lees et al. (2019) evaluated the effect on consumer opinions on striploin, and outside flat cuts from 87 grass-fed cattle.
+
+Each cut was halved and allocated to one of the following two treatments: (1) not infused (control) and (2) infused with a kiwifruit extract (enhanced), and then aged for 10 or 28 days and prepared as grill or roast samples.
+
+Consumer evaluations for tenderness, juiciness, flavor, and overall liking were conducted using untrained consumer sensory panels (Polkinghorne et al. 2008).
+
+The outcome variable that we are primarily interested in is 'Tender' an average score from 10 different consumers each of whom assigned a “tenderness” score (ranging from 0-100).
+
+## Analysis
+
+#### Data Cleaning 
+
+Before diving into the specific questions surrounding the data, first we will examine the dataset, and apply the relevent modifications for simplicity.
+
+```{r echo = FALSE, warnings = FALSE, message=FALSE}
+library(readxl)
+library(janitor)
+library(emmeans)
+library(tidyverse)
+data = read_excel("C:/Users/My Account/Desktop/DATA2002/Module_3_report/infusions_data_2002.xlsx") %>% 
+  clean_names() %>% 
+  remove_empty()
+
+```
+
+The data set is filled with many irrelevant colomns, so we will make a new data frame using the **select** function, only grabbing the data we know we will make use of. The colomn names of the variables we'll be using are workable so far, so we will not alter them.
+
+```{r}
+improved = data %>%
+  select(sequence, eqs_ref, key_1, cut,cook,d_aged, trial_notes,tender,juicy,flavour,o_all_like, satisfaction)
+
+head(improved)
+```
+
+
+### Does the kiwifruit extract treatment improve tenderness? Is there an interaction between this and other factors?
+
+Before going into in depth analysis whether this is true or not we will first have a look at the raw data to see if we can see any general trends. The chart below, shows the proportion of values to see if we can conduct any paired tests. 
+
+```{r}
+ggplot(data = data) + 
+  geom_bar(mapping = aes(x = trial_notes, y = ..prop.., group = 1), stat = "count") +
+  labs(x = "", y = "Proportion of Treatments",
+      title = "Proportion of Meats, Treated vs Controlled") + 
+  coord_flip() + 
+  theme_linedraw() + scale_y_continuous(labels = scales::percent_format())
+```
+
+As the output shows, there are a lot more observations of meats with the treatment, compared to those without it (the controls). Thus we will run a quick t-test, to see whether overall theres a difference in the two methods. We will rely on the central limit theorm here to fulfil the assumption of normality.
+
+```{r}
+t.test(tender ~ trial_notes, data = data)
+```
+```{r}
+improved %>% ggplot(aes(x = trial_notes , y = tender, fill = trial_notes)) + 
+  geom_boxplot() + coord_flip() + 
+  theme_classic() +
+  labs(y = "Tenderness Score (/100)", x = "Type of Treatment",fill="", title = "Tenderness Score, Treated vs Controlled") 
+```
+
+When taking a closer look at the two, it doesn't seem as though there's a huge difference like the t-test seems to suggest, the means are roughly close and the distributions look similar, although there does seem to be a more skewed thus we will continue to analyse using ANOVA.
+### Are there differences between cooking methods? 
+
+
+
+### Are there differences between aging periods? 
+
+### Are there differences between muscles?
+
+Discuss the size of any significant differences. Are they meaningful differences? I.e. do you think consumers would be able to tell the difference or is it a small difference (even though it might still be statistically significant)?

@@ -1,0 +1,28 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1571272360502.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2793614333",
+    "id" : "88F4BD3C",
+    "lastKnownWriteTime" : 1571355528,
+    "last_content_update" : 1571355528415,
+    "path" : "C:/Users/My Account/Desktop/DATA2002/Module_3_report/module_3_report.Rmd",
+    "project_path" : "module_3_report.Rmd",
+    "properties" : {
+        "cursorPosition" : "966,67",
+        "ignored_words" : "www,au,fd,https,kfc,popeyes,fil,mcdonalds,xlsx,QQplots,bonferonni,bonferroni,Bonferroni\n",
+        "last_setup_crc32" : "FE4EA317bb338d19",
+        "scrollLine" : "965",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

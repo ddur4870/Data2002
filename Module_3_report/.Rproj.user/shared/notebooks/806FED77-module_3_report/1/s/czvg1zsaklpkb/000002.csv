@@ -1,0 +1,8 @@
+"0","library(readxl)"
+"0","library(janitor)"
+"0","library(emmeans)"
+"0","library(tidyverse)"
+"0","data = read_excel(""C:/Users/My Account/Desktop/DATA2002/Module_3_report/infusions_data_2002.xlsx"") %>% "
+"0","  clean_names() %>% "
+"0","  remove_empty()"
+"0",""

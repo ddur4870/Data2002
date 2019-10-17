@@ -1,0 +1,4 @@
+"0","year_phones = table(NZ_data$`Own cell phone`,NZ_data$Year)"
+"2","Error in table(NZ_data$`Own cell phone`, NZ_data$Year) : 
+  object 'NZ_data' not found
+"
